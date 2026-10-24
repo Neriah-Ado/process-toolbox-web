@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="刻蚀选择比计算器：速率法、损失法、过刻蚀余量校核、最小选择比反推。工艺工具箱网页版。">
+<title>刻蚀选择比计算器 · 工艺工具箱 Process Toolbox</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --line:#dfe5ec; --ink:#16202e; --mut:#5b6b7d;
+  --acc:#0e7490; --ok:#15803d; --warn:#b45309; --fail:#b91c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--ink);line-height:1.55}
+.hero{background:linear-gradient(135deg,#0f2740 0%,#0e7490 100%);color:#fff;padding:26px 16px 20px}
+.hero-inner{max-width:880px;margin:0 auto}
+.brand{font-size:14px;opacity:.85;letter-spacing:.5px}
+.brand .en{opacity:.7}
+h1{margin:.25em 0 .15em;font-size:26px}
+h1 .en{opacity:.6;font-weight:400;font-size:.55em}
+.tagline{margin:0 0 14px;opacity:.85;font-size:14px}
+.tagline code{background:rgba(255,255,255,.16);padding:1px 7px;border-radius:5px;font-size:13px}
+.unitbar{display:flex;gap:12px;flex-wrap:wrap}
+.unitbar label{font-size:13px;display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.13);padding:5px 11px;border-radius:9px}
+select{border:none;border-radius:6px;padding:3px 7px;font-size:13px;background:#fff;color:var(--ink)}
+main{max-width:880px;margin:18px auto 44px;padding:0 14px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;
+  padding:8px 16px;font-size:14px;cursor:pointer;color:var(--ink)}
+.tabs button:hover{border-color:var(--acc)}
+.tabs button.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px;box-shadow:0 1px 3px rgba(15,30,50,.05)}
+.panel.active{display:block}
+h2{font-size:17px;margin:0 0 14px}
+h2 .en{color:var(--mut);font-weight:400;font-size:.72em;margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.field label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.field label .unit{color:var(--acc);font-weight:600}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);
+  border-radius:8px;font-size:15px;background:#fff}
+.field input:focus{outline:2px solid #7dd3fc;border-color:var(--acc)}
+.seg{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.seg label{border:1px solid var(--line);border-radius:8px;padding:6px 13px;font-size:13.5px;
+  cursor:pointer;background:#fff;user-select:none}
+.seg input{margin-right:5px;accent-color:var(--acc)}
+fieldset{border:none;padding:0;margin:0}
+fieldset[hidden]{display:none}
+.result{margin-top:18px;border-top:1px dashed var(--line);padding-top:15px;min-height:56px}
+.result .idle{color:var(--mut);font-size:14px}
+.Sbig{font-size:30px;font-weight:700;color:var(--acc)}
+.Sbig small{font-size:14px;color:var(--mut);font-weight:400;margin-left:6px}
+.kv{display:flex;gap:10px 26px;flex-wrap:wrap;color:var(--mut);font-size:14px;margin-top:7px}
+.kv b{color:var(--ink)}
+.badge{display:inline-block;padding:2px 13px;border-radius:999px;color:#fff;
+  font-size:13px;font-weight:600;vertical-align:middle;margin-left:10px}
+.badge.ok{background:var(--ok)} .badge.warn{background:var(--warn)} .badge.fail{background:var(--fail)}
+.note{margin-top:12px;font-size:13.5px;padding:9px 13px;border-radius:9px}
+.note.warn{background:#fef3c7;color:#92400e}
+.note.fail{background:#fee2e2;color:#991b1b}
+.note.ok{background:#dcfce7;color:#166534}
+.maskbar{height:18px;border-radius:9px;background:#e2e8f0;overflow:hidden;margin-top:14px}
+.maskbar .fill{height:100%;background:var(--acc);width:0;transition:width .3s;border-radius:9px 0 0 9px}
+.maskbar.fail .fill{background:var(--fail)}
+.maskbar.warn .fill{background:var(--warn)}
+.barlabel{font-size:12.5px;color:var(--mut);margin-top:5px}
+.hint{color:var(--mut);font-size:13px;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0 20px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+th{background:#eef4f8}
+td.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+.disclaimer{background:#fffbeb;border:1px solid #fde68a;color:#92400e;
+  padding:10px 14px;border-radius:10px;font-size:13.5px;margin-bottom:18px}
+.refblock h3{font-size:15px;margin:18px 0 6px}
+.refblock ul{margin:6px 0 0;padding-left:22px;font-size:13.5px;color:var(--ink)}
+.refblock li{margin:4px 0}
+footer{max-width:880px;margin:0 auto 34px;padding:0 14px;color:var(--mut);
+  font-size:12.5px;text-align:center}
+footer a{color:var(--acc)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand">⚙️ 工艺工具箱 <span class="en">Process Toolbox</span></div>
+    <h1>刻蚀选择比计算器 <span class="en">Etch Selectivity Calculator</span></h1>
+    <p class="tagline">S(film : mask) = ER(film) / ER(mask) · 与技能 <code>etch-selectivity-calc</code> 同一套算法 · 纯本地计算，不上传任何数据</p>
+    <div class="unitbar">
+      <label>厚度单位
+        <select id="g-tu">
+          <option value="nm" selected>nm</option>
+          <option value="angstrom">Å</option>
+          <option value="um">µm</option>
+        </select>
+      </label>
+      <label>时间单位
+        <select id="g-time">
+          <option value="min" selected>min</option>
+          <option value="s">s</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</header>
+
+<main>
+  <nav class="tabs" id="tabs">
+    <button data-panel="rate" class="active">① 速率法</button>
+    <button data-panel="loss">② 损失法</button>
+    <button data-panel="budget">③ 余量校核</button>
+    <button data-panel="required">④ 最小选择比</button>
+    <button data-panel="ref">参考数据</button>
+  </nav>
+
+  <!-- ① rate -->
+  <section class="panel active" id="panel-rate">
+    <h2>由两个刻蚀速率求选择比 <span class="en">S = ER(film) / ER(mask)</span></h2>
+    <div class="grid">
+      <div class="field">
+        <label>目标膜刻蚀速率 ER(film) <span class="unit" data-unit="rate"></span></label>
+        <input type="number" id="r-film" value="300" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>掩膜刻蚀速率 ER(mask) <span class="unit" data-unit="rate"></span></label>
+        <input type="number" id="r-mask" value="10" min="0" step="any">
+      </div>
+    </div>
+    <div class="result" id="r-out"></div>
+    <p class="hint">适用：已分别做空白片速率实验。两个速率使用相同单位，选择比与单位无关。</p>
+  </section>
+
+  <!-- ② loss -->
+  <section class="panel" id="panel-loss">
+    <h2>由厚度损失求选择比 <span class="en">S = Δfilm / Δmask（同一步刻蚀）</span></h2>
+    <div class="seg">
+      <label><input type="radio" name="lmode" value="loss" checked>输入厚度损失</label>
+      <label><input type="radio" name="lmode" value="abs">输入刻蚀前后厚度</label>
+    </div>
+    <fieldset id="l-fs-loss">
+      <div class="grid">
+        <div class="field">
+          <label>目标膜损失 Δfilm <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-df" value="180" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>掩膜损失 Δmask <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-dm" value="30" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>刻蚀时间（可选） <span class="unit" data-unit="time"></span></label>
+          <input type="number" id="l-t" value="3" min="0" step="any">
+        </div>
+      </div>
+    </fieldset>
+    <fieldset id="l-fs-abs" hidden>
+      <div class="grid">
+        <div class="field">
+          <label>目标膜 · 刻蚀前 <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-fb" value="500" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>目标膜 · 刻蚀后 <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-fa" value="320" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>掩膜 · 刻蚀前 <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-mb" value="900" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>掩膜 · 刻蚀后 <span class="unit" data-unit="len"></span></label>
+          <input type="number" id="l-ma" value="870" min="0" step="any">
+        </div>
+      </div>
+    </fieldset>
+    <div class="result" id="l-out"></div>
+    <p class="hint">最常用的实测法：椭偏/探针分别测同一步刻蚀前后目标膜与光刻胶厚度，损失相除即 S。两组数据必须来自同一时刻窗口。</p>
+  </section>
+
+  <!-- ③ budget -->
+  <section class="panel" id="panel-budget">
+    <h2>掩膜余量校核 <span class="en">消耗 = film × (1 + 过刻蚀) / S</span></h2>
+    <div class="grid">
+      <div class="field">
+        <label>需去除的目标膜厚度 <span class="unit" data-unit="len"></span></label>
+        <input type="number" id="b-film" value="500" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>初始掩膜（如光刻胶）厚度 <span class="unit" data-unit="len"></span></label>
+        <input type="number" id="b-mask" value="900" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>选择比 S(film : mask)</label>
+        <input type="number" id="b-s" value="6" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>过刻蚀比例（%）</label>
+        <input type="number" id="b-oe" value="20" min="0" step="any">
+      </div>
+    </div>
+    <div class="result" id="b-out"></div>
+    <p class="hint">剩余掩膜不足初始厚度 10% 时给出黄色预警——片内均匀性与端点检测误差足以吃穿这点余量。</p>
+  </section>
+
+  <!-- ④ required -->
+  <section class="panel" id="panel-required">
+    <h2>反推所需最小选择比 <span class="en">S<sub>min</sub> = film × (1 + 过刻蚀) / (预算 × mask)</span></h2>
+    <div class="grid">
+      <div class="field">
+        <label>需去除的目标膜厚度 <span class="unit" data-unit="len"></span></label>
+        <input type="number" id="q-film" value="500" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>初始掩膜厚度 <span class="unit" data-unit="len"></span></label>
+        <input type="number" id="q-mask" value="900" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>过刻蚀比例（%）</label>
+        <input type="number" id="q-oe" value="20" min="0" step="any">
+      </div>
+      <div class="field">
+        <label>允许掩膜最大消耗比例（%）</label>
+        <input type="number" id="q-frac" value="30" min="0" step="any">
+      </div>
+    </div>
+    <div class="result" id="q-out"></div>
+    <p class="hint">得到 S<sub>min</sub> 后，到"参考数据"页确认该量级属于"调工艺可及"还是"必须换掩膜方案（硬掩膜/OPL）"。</p>
+  </section>
+
+  <!-- ref -->
+  <section class="panel" id="panel-ref">
+    <h2>常见刻蚀体系选择比量级 <span class="en">literature-typical, order of magnitude</span></h2>
+    <div class="disclaimer">⚠️ 下表为教科书/文献中的<strong>量级范围</strong>，受机台（CCP/ICP）、功率、偏压、腔压、温度、聚合状态影响极大。仅用于初值选取与 sanity check，<strong>工艺规范必须以本线体 DOE / 量测 / 端点数据为准</strong>。</div>
+
+    <div class="refblock">
+      <h3>介质刻蚀（氟碳化学气）</h3>
+      <table>
+        <tr><th>被刻蚀膜</th><th>掩膜/阻挡层</th><th>典型化学气</th><th>S 量级</th></tr>
+        <tr><td>SiO₂</td><td>PR</td><td>CHF₃/CF₄ (+O₂), CCP</td><td class="num">3~6</td></tr>
+        <tr><td>SiO₂</td><td>PR</td><td>C₄F₈/Ar（高密度）</td><td class="num">5~10</td></tr>
+        <tr><td>SiO₂</td><td>Si₃N₄</td><td>CHF₃/CF₄ 类</td><td class="num">2~5</td></tr>
+        <tr><td>SiO₂</td><td>poly-Si / a-Si</td><td>氟碳类</td><td class="num">&gt;20~50</td></tr>
+        <tr><td>Si₃N₄</td><td>PR</td><td>CHF₃/O₂, CF₄/O₂</td><td class="num">2~4</td></tr>
+        <tr><td>Si₃N₄</td><td>SiO₂</td><td>CHF₃/CF₄ 类</td><td class="num">2~10</td></tr>
+      </table>
+
+      <h3>多晶硅 / 硅刻蚀</h3>
+      <table>
+        <tr><th>被刻蚀膜</th><th>掩膜/阻挡层</th><th>典型化学气</th><th>S 量级</th></tr>
+        <tr><td>poly-Si</td><td>PR</td><td>HBr/Cl₂/O₂</td><td class="num">4~8</td></tr>
+        <tr><td>poly-Si</td><td>gate oxide (SiO₂)</td><td>HBr/O₂</td><td class="num">50~200</td></tr>
+        <tr><td>poly-Si</td><td>gate oxide (SiO₂)</td><td>Cl₂ 基</td><td class="num">10~30</td></tr>
+        <tr><td>c-Si / a-Si</td><td>SiO₂</td><td>SF₆ (+Ar), ICP</td><td class="num">20~100+</td></tr>
+        <tr><td>Si</td><td>PR</td><td>SF₆/O₂</td><td class="num">1~3</td></tr>
+      </table>
+
+      <h3>金属刻蚀（氯基为主）</h3>
+      <table>
+        <tr><th>被刻蚀膜</th><th>掩膜/阻挡层</th><th>典型化学气</th><th>S 量级</th></tr>
+        <tr><td>Al-0.5%Cu</td><td>PR</td><td>Cl₂/BCl₃ (+CH₄/N₂)</td><td class="num">3~6</td></tr>
+        <tr><td>Al-0.5%Cu</td><td>SiO₂</td><td>Cl₂/BCl₃</td><td class="num">&gt;20~30</td></tr>
+        <tr><td>W</td><td>PR</td><td>SF₆/Ar 或 SF₆/Cl₂</td><td class="num">2~5</td></tr>
+        <tr><td>TiN / TaN</td><td>PR</td><td>Cl₂/BCl₃ 或 F 基</td><td class="num">5~10</td></tr>
+      </table>
+
+      <h3>经验法则</h3>
+      <ul>
+        <li><strong>PR 掩膜通用下限</strong>：S(film:PR) ≥ 5 才考虑 20% 级过刻蚀；2~5 需压缩过刻蚀或上硬掩膜；&lt; 2 不可行。</li>
+        <li><strong>提高对 PR 选择比</strong>：降 O₂ 比例、增聚合（C₄F₈/CH₂F₂/CHF₃）、降腔温、PR 硬烘烤/UV 固化、上 OPL 或硬掩膜。</li>
+        <li><strong>提高对下层选择比</strong>：降偏压功率（降离子能量）、加刻停层、换低能化学气（HBr 对氧化硅）。</li>
+        <li><strong>代价权衡</strong>：聚合型化学气选择性高但易残留、CD 漂移；SF₆ 系对 Si:SiO₂ 选择比高但各向同性、形貌不可控。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  自动部署 by GitHub Actions · 站点源码
+  <a href="https://github.com/Neriah-Ado/process-toolbox-web" target="_blank" rel="noopener">process-toolbox-web</a>
+  · 算法与私有仓库技能 <code>etch-selectivity-calc</code> 一致 · 参考数据仅供量级校核，不构成工艺规范
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var LEN = { nm: 1, angstrom: 0.1, um: 1000 };        // value -> nm
+  var MINU = { min: 1, s: 1 / 60 };                     // minutes per unit
+  var UNIT_NAME = { nm: "nm", angstrom: "Å", um: "µm" };
+  var TU = "nm", TMU = "min";
+
+  function fmt(v) {
+    if (!isFinite(v)) return "—";
+    if (Math.abs(v) >= 1000) return v.toLocaleString("en-US", { maximumFractionDigits: 1 });
+    return String(parseFloat(v.toPrecision(4)));
+  }
+  function dispLen(nm) { return fmt(nm / LEN[TU]) + " " + UNIT_NAME[TU]; }
+  function dispRate(nmPerMin) {
+    return fmt(nmPerMin * MINU[TMU] / LEN[TU]) + " " + UNIT_NAME[TU] + "/" + TMU;
+  }
+  function num(id) { var v = parseFloat($(id).value); return isFinite(v) ? v : NaN; }
+  function setUnits() {
+    var u = document.querySelectorAll(".unit");
+    for (var i = 0; i < u.length; i++) {
+      var k = u[i].getAttribute("data-unit");
+      u[i].textContent = k === "len" ? UNIT_NAME[TU] : k === "time" ? TMU : UNIT_NAME[TU] + "/" + TMU;
+    }
+  }
+  function idle(el, msg) { el.innerHTML = '<div class="idle">' + msg + "</div>"; }
+  function rows(pairs) {
+    var h = '<div class="kv">';
+    for (var i = 0; i < pairs.length; i++)
+      h += "<span>" + pairs[i][0] + " <b>" + pairs[i][1] + "</b></span>";
+    return h + "</div>";
+  }
+
+  /* ① rate */
+  function calcRate() {
+    var out = $("r-out"), rf = num("r-film"), rm = num("r-mask");
+    if (!(rf > 0) || !(rm > 0)) return idle(out, "输入两个速率后自动计算。");
+    var s = rf / rm;
+    out.innerHTML =
+      '<span class="Sbig">S = ' + fmt(s) + '<small>film : mask</small></span>' +
+      rows([["ER(film) =", dispRate(rf * LEN[TU] / MINU[TMU])],
+            ["ER(mask) =", dispRate(rm * LEN[TU] / MINU[TMU])]]) +
+      (s < 1 ? '<div class="note fail">⚠️ S &lt; 1：掩膜比目标膜刻得更快，该材料组合不能用作掩膜。</div>' : "");
+  }
+
+  /* ② loss */
+  function calcLoss() {
+    var out = $("l-out"), abs = document.querySelector('input[name="lmode"]:checked').value === "abs";
+    var df, dm, t = NaN;
+    if (!abs) {
+      df = num("l-df"); dm = num("l-dm"); t = num("l-t");
+    } else {
+      var fb = num("l-fb"), fa = num("l-fa"), mb = num("l-mb"), ma = num("l-ma");
+      if (!(fb > 0) || !(fa > 0) || !(mb > 0) || !(ma > 0))
+        return idle(out, "输入刻蚀前后厚度后自动计算。");
+      if (fa > fb || ma > mb)
+        return idle(out, "刻蚀后厚度大于刻蚀前，请检查输入顺序。");
+      df = fb - fa; dm = mb - ma;
+    }
+    if (!(dm > 0) || !(df > 0)) return idle(out, "掩膜与目标膜都需有可测的正损失。");
+    var s = df / dm, h =
+      '<span class="Sbig">S = ' + fmt(s) + '<small>film : mask</small></span>' +
+      rows([["Δfilm =", dispLen(df * LEN[TU])], ["Δmask =", dispLen(dm * LEN[TU])]]);
+    if (!abs && t > 0) {
+      var tmin = t * MINU[TMU];
+      h += rows([["时间 =", fmt(t) + " " + TMU],
+                 ["ER(film) =", dispRate(df * LEN[TU] / tmin)],
+                 ["ER(mask) =", dispRate(dm * LEN[TU] / tmin)]]);
+    }
+    if (s < 1) h += '<div class="note fail">⚠️ S &lt; 1：掩膜损耗快于目标膜刻蚀，不可用。</div>';
+    out.innerHTML = h;
+  }
+
+  /* ③ budget */
+  function calcBudget() {
+    var out = $("b-out"), f = num("b-film"), m = num("b-mask"),
+        s = num("b-s"), oe = num("b-oe");
+    if (!(f > 0) || !(m > 0) || !(s > 0) || !(isFinite(oe) && oe >= 0))
+      return idle(out, "输入参数后自动校核。");
+    var consumed = f * (1 + oe / 100) / s, remaining = m - consumed,
+        maxOE = m * s / f - 1, ok = remaining >= 0;
+    var verdict = ok ? (remaining < 0.1 * m ? ["warn", "余量偏小"] : ["ok", "OK"])
+                     : ["fail", "FAIL"];
+    var h =
+      '<span class="Sbig">' + fmt(Math.max(remaining, 0) === remaining ? remaining : remaining) +
+      ' <small>' + UNIT_NAME[TU] + " 剩余掩膜</small></span>" +
+      '<span class="badge ' + verdict[0] + '">' + verdict[1] + "</span>" +
+      rows([["掩膜消耗 =", dispLen(consumed * LEN[TU])],
+            ["初始掩膜 =", dispLen(m * LEN[TU])],
+            ["极限过刻蚀 ≈", maxOE > 0 ? (maxOE * 100).toFixed(1) + "%" : "0%（已无余量）"]]) +
+      '<div class="maskbar ' + (ok ? "" : "fail") + (ok && verdict[0] === "warn" ? " warn" : "") + '">' +
+      '<div class="fill" style="width:' + Math.min(consumed / m, 1) * 100 + '%"></div></div>' +
+      '<div class="barlabel">掩膜消耗 / 初始厚度</div>';
+    if (ok && remaining < 0.1 * m)
+      h += '<div class="note warn">剩余掩膜不足初始厚度 10%，均匀性/端点误差可能吃穿掩膜，建议加厚或提高选择比。</div>';
+    if (!ok)
+      h += '<div class="note fail">掩膜被打穿：需要 S ≥ ' + fmt(f * (1 + oe / 100) / m) + "，或减小过刻蚀。</div>";
+    out.innerHTML = h;
+  }
+
+  /* ④ required */
+  function calcRequired() {
+    var out = $("q-out"), f = num("q-film"), m = num("q-mask"),
+        oe = num("q-oe"), fr = num("q-frac");
+    if (!(f > 0) || !(m > 0) || !(isFinite(oe) && oe >= 0) || !(fr > 0) || fr > 100)
+      return idle(out, "输入参数后自动计算（允许消耗比例需 ≤ 100%）。");
+    var smin = f * (1 + oe / 100) / (fr / 100 * m);
+    var hints = [[5, "宽裕，光刻胶通常也可胜任"],
+                 [20, "普通氟碳/氯基工艺可及"],
+                 [100, "需聚合物控制良好的高密度体系，接近硬掩膜量级"]];
+    var best = hints[0];
+    for (var i = 1; i < hints.length; i++)
+      if (Math.abs(hints[i][0] - smin) < Math.abs(best[0] - smin)) best = hints[i];
+    out.innerHTML =
+      '<span class="Sbig">S<sub>min</sub> = ' + fmt(smin) + '<small>film : mask</small></span>' +
+      rows([["目标膜 =", dispLen(f * LEN[TU])], ["掩膜 =", dispLen(m * LEN[TU])],
+            ["过刻蚀 =", oe + "%"], ["允许消耗 =", fr + "%"]]) +
+      '<div class="note ' + (smin <= 5 ? "ok" : smin <= 20 ? "warn" : "fail") + '">' +
+      "该掩膜预算下" + best[1] + (smin > 20 ? "——考虑硬掩膜或 OPL 方案。" : "。") + "</div>";
+  }
+
+  /* wiring */
+  function calcAll() { calcRate(); calcLoss(); calcBudget(); calcRequired(); }
+
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var btns = this.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("active", btns[i] === b);
+    var ps = document.querySelectorAll(".panel");
+    for (var j = 0; j < ps.length; j++)
+      ps[j].classList.toggle("active", ps[j].id === "panel-" + b.getAttribute("data-panel"));
+  });
+
+  document.querySelectorAll('input[name="lmode"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      $("l-fs-loss").hidden = this.value !== "loss";
+      $("l-fs-abs").hidden = this.value !== "abs";
+      calcLoss();
+    });
+  });
+
+  ["g-tu", "g-time"].forEach(function (id) {
+    $(id).addEventListener("change", function () {
+      TU = $("g-tu").value; TMU = $("g-time").value;
+      setUnits(); calcAll();
+    });
+  });
+
+  document.querySelectorAll('.panel input[type="number"]').forEach(function (inp) {
+    inp.addEventListener("input", calcAll);
+  });
+
+  setUnits(); calcAll();
+})();
+</script>
+</body>
+</html>
