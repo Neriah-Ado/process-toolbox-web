@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="工艺实验设计器：全因子、部分因子、田口正交表、Plackett-Burman、Box-Behnken、中心复合 CCD、拉丁超立方。生成随机化设计矩阵并导出 CSV。">
+<title>工艺实验设计器（DOE）· 工艺工具箱 Process Toolbox</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --line:#dfe5ec; --ink:#16202e; --mut:#5b6b7d;
+  --acc:#0e7490; --ok:#15803d; --warn:#b45309; --fail:#b91c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+     background:var(--bg);color:var(--ink);line-height:1.55}
+.hero{background:linear-gradient(135deg,#0f2740 0%,#0e7490 100%);color:#fff;padding:26px 16px 20px}
+.hero-inner{max-width:960px;margin:0 auto}
+.brand{font-size:14px;opacity:.85;letter-spacing:.5px}
+.brand .en{opacity:.7}
+.brand a{color:#fff;text-decoration:none;opacity:.8}
+.brand a:hover{opacity:1;text-decoration:underline}
+h1{margin:.25em 0 .15em;font-size:26px}
+h1 .en{opacity:.6;font-weight:400;font-size:.55em}
+.tagline{margin:0 0 14px;opacity:.85;font-size:14px}
+.tagline code{background:rgba(255,255,255,.16);padding:1px 7px;border-radius:5px;font-size:13px}
+main{max-width:960px;margin:18px auto 44px;padding:0 14px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;
+  padding:8px 16px;font-size:14px;cursor:pointer;color:var(--ink)}
+.tabs button:hover{border-color:var(--acc)}
+.tabs button.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:20px 22px;box-shadow:0 1px 3px rgba(15,30,50,.05);margin-bottom:16px}
+h2{font-size:17px;margin:0 0 14px}
+h2 .en{color:var(--mut);font-weight:400;font-size:.72em;margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.field label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--line);
+  border-radius:8px;font-size:14px;background:#fff;font-family:inherit}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #7dd3fc;border-color:var(--acc)}
+.hint{color:var(--mut);font-size:12.5px;margin-top:3px}
+.frow{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.frow input{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.frow .fname{width:170px;flex:none}
+.frow .flevels{flex:1}
+.frow button{flex:none;border:1px solid var(--line);background:#fff;border-radius:8px;
+  width:34px;height:36px;cursor:pointer;color:var(--fail);font-size:15px}
+.frow button:hover{background:#fee2e2;border-color:#fca5a5}
+.btn{border:none;border-radius:10px;padding:10px 22px;font-size:14.5px;cursor:pointer;
+  background:var(--acc);color:#fff;font-weight:600}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+.btn.small{padding:7px 14px;font-size:13.5px}
+.opt{display:none}
+.opt.show{display:block}
+.optblock{border-top:1px dashed var(--line);margin-top:14px;padding-top:14px}
+.result{margin-top:16px}
+.badge{display:inline-block;padding:2px 13px;border-radius:999px;color:#fff;
+  font-size:13px;font-weight:600;vertical-align:middle;margin-right:8px}
+.badge.acc{background:var(--acc)} .badge.ok{background:var(--ok)}
+.badge.warn{background:var(--warn)}
+.note{margin-top:10px;font-size:13.5px;padding:9px 13px;border-radius:9px;background:#f1f5f9;color:var(--ink)}
+.note.ok{background:#dcfce7;color:#166534}
+.note.warn{background:#fef3c7;color:#92400e}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+th{background:#eef4f8;position:sticky;top:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.twrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.twrap th{position:sticky;top:0;z-index:1}
+.err{background:#fee2e2;color:#991b1b;padding:9px 13px;border-radius:9px;font-size:13.5px;margin-top:10px}
+pre.meta{background:#f1f5f9;border-radius:10px;padding:12px 14px;font-size:12.8px;
+  overflow:auto;margin:10px 0;line-height:1.6}
+footer{max-width:960px;margin:0 auto 34px;padding:0 14px;color:var(--mut);
+  font-size:12.5px;text-align:center}
+footer a{color:var(--acc)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand">⚙️ 工艺工具箱 <span class="en">Process Toolbox</span> · <a href="index.html">← 刻蚀选择比计算器</a></div>
+    <h1>工艺实验设计器 <span class="en">DOE Designer</span></h1>
+    <p class="tagline">全因子 / 部分因子 / 田口正交表 / Plackett-Burman / Box-Behnken / 中心复合 / 拉丁超立方 · 与技能 <code>doe-process-design</code> 同一套算法 · 纯本地计算，不上传任何数据</p>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>因子定义 <span class="en">Factors</span></h2>
+    <div id="factorList"></div>
+    <button class="btn ghost small" id="addFactor" type="button">＋ 添加因子</button>
+    <div class="hint" id="levelHint" style="margin-top:8px">水平写法：水平1,水平2,水平3（数量不限）</div>
+  </div>
+
+  <div class="tabs" id="typeTabs">
+    <button data-t="full" class="active">全因子</button>
+    <button data-t="frac">部分因子 2^(k-p)</button>
+    <button data-t="taguchi">田口正交表</button>
+    <button data-t="pb">Plackett-Burman</button>
+    <button data-t="bbd">Box-Behnken</button>
+    <button data-t="ccd">中心复合 CCD</button>
+    <button data-t="lhs">拉丁超立方</button>
+  </div>
+
+  <div class="panel">
+    <div class="opt show" id="opt-full">
+      <div class="grid">
+        <div class="field"><label>追加中心点个数</label><input id="full-center" type="number" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="opt" id="opt-frac">
+      <div class="field"><label>生成元（每行一个：新因子=基础因子乘积）</label>
+        <textarea id="frac-gens" rows="3" placeholder="E=ABC&#10;F=BCD"></textarea>
+        <div class="hint">k 个因子、p 个生成元 → 2^(k-p) 次 run；目标字母按顺序占用后 p 个因子</div>
+      </div>
+    </div>
+    <div class="opt" id="opt-taguchi">
+      <div class="grid">
+        <div class="field"><label>正交表</label>
+          <select id="tag-array">
+            <option>L9</option><option>L18</option><option>L8</option><option>L16</option>
+            <option>L4</option><option>L12</option><option>L25</option><option>L27</option><option>L32</option>
+          </select>
+          <div class="hint">L9=4×3水平；L18=1×2水平+7×3水平；L8/L16=2水平</div>
+        </div>
+      </div>
+    </div>
+    <div class="opt" id="opt-pb">
+      <div class="grid">
+        <div class="field"><label>运行数 N</label>
+          <select id="pb-runs">
+            <option value="0" selected>自动（最小可用）</option>
+            <option>8</option><option>12</option><option>16</option><option>20</option><option>24</option><option>32</option>
+          </select>
+          <div class="hint">N-1 ≥ 因子数；只估主效应</div>
+        </div>
+      </div>
+    </div>
+    <div class="opt" id="opt-bbd">
+      <div class="grid">
+        <div class="field"><label>中心点个数</label><input id="bbd-center" type="number" value="3" min="0"></div>
+      </div>
+    </div>
+    <div class="opt" id="opt-ccd">
+      <div class="grid">
+        <div class="field"><label>α 取值</label>
+          <select id="ccd-alpha"><option value="rotatable" selected>可旋转 rotatable</option>
+          <option value="face">面中心 face（不超范围）</option><option value="val">自定义数值</option></select>
+        </div>
+        <div class="field"><label>自定义 α</label><input id="ccd-alphaval" type="number" step="0.01" value="2"></div>
+        <div class="field"><label>角点区中心点</label><input id="ccd-cf" type="number" value="4" min="0"></div>
+        <div class="field"><label>轴向区中心点</label><input id="ccd-ca" type="number" value="2" min="0"></div>
+      </div>
+    </div>
+    <div class="opt" id="opt-lhs">
+      <div class="grid">
+        <div class="field"><label>采样数</label><input id="lhs-n" type="number" value="20" min="2"></div>
+      </div>
+    </div>
+    <div class="optblock">
+      <div class="grid">
+        <div class="field"><label>随机化种子（留空 = 随机）</label><input id="seed" type="number" placeholder="如 42"></div>
+        <div class="field" style="align-self:end"><button class="btn" id="gen" type="button">生成设计矩阵</button></div>
+      </div>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="panel result" id="resultPanel" style="display:none">
+    <h2>设计矩阵 <span class="en">Design Matrix</span></h2>
+    <div id="summary"></div>
+    <div id="meta"></div>
+    <div class="twrap"><table id="matrix"></table></div>
+    <p>
+      <button class="btn small" id="dl" type="button">⬇ 下载 CSV（Excel 可直接打开）</button>
+      <button class="btn ghost small" id="cp" type="button">⧉ 复制 CSV</button>
+      <span class="hint" style="display:inline-block;margin-left:10px">实验完成后在末尾追加「响应Y」列，用技能 doe-process-design 的 analyze 子命令分析</span>
+    </p>
+  </div>
+</main>
+
+<footer>工艺工具箱 · DOE 设计器与技能 <code>doe-process-design</code> 算法一致 · 设计仅供参考，执行前确认工艺安全窗口</footer>
+
+<script>
+"use strict";
+// ------------------------------------------------ 随机与数论工具
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffled(n,seed){const o=[...Array(n).keys()];
+  const rnd=seed==null?Math.random:mulberry32(seed);
+  for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[o[i],o[j]]=[o[j],o[i]];}
+  return o.map(x=>x+1);}
+function modpow(b,e,m){let r=1;b%=m;while(e>0){if(e&1)r=r*b%m;b=b*b%m;e>>=1;}return r;}
+function cmpArr(a,b){for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]-b[i];}return 0;}
+const LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+// ------------------------------------------------ 正交表构造
+function hadamard(n){ // 任意 2^k 或 Paley (q+1)
+  if((n&(n-1))===0){let H=[[1]];
+    while(H.length<n){const m=H.length;
+      H=H.map((r,i)=>r.concat(H[i])).concat(H.map((r,i)=>r.concat(H[i].map(v=>-v))));}
+    return H;}
+  const q=n-1; // Paley：q 素数且 q≡3 (mod 4)
+  const resid=new Set();for(let x=1;x<q;x++)resid.add(x*x%q);
+  const H=Array.from({length:q+1},()=>Array(q+1).fill(1));
+  for(let i=0;i<q;i++)for(let j=0;j<q;j++){
+    if(i===j)H[i+1][j+1]=-1;
+    else H[i+1][j+1]=((i-j)%q+q)%q===0?-1:(resid.has(((i-j)%q+q)%q)?1:-1);}
+  H[0][0]=1;for(let j=1;j<=q;j++)H[0][j]=1;for(let i=1;i<=q;i++)H[i][0]=1;
+  return H;
+}
+function twoLevelArray(n){
+  const H=hadamard(n);const cols=[];
+  for(let j=1;j<n;j++){const col=H.map(r=>r[j]);
+    if(col.reduce((s,v)=>s+v,0)!==0)continue;
+    if(col[0]<0)col.forEach((v,i)=>col[i]=-v);
+    cols.push(col);}
+  return cols[0].map((_,i)=>cols.map(c=>c[i]));
+}
+function bushOA(q,t){
+  const total=Math.pow(q,t);const cols=[];const seen=new Set();
+  for(let g=0;g<total;g++){
+    const v=[];let x=g;for(let i=0;i<t;i++){v.push(x%q);x=Math.floor(x/q);}
+    if(v.every(a=>a===0))continue;
+    const w=v.slice();
+    for(let i=t-1;i>=0;i--)if(w[i]!==0){const inv=modpow(w[i],q-2,q);
+      for(let k=0;k<t;k++)w[k]=w[k]*inv%q;break;}
+    const key=w.join(",");
+    if(!seen.has(key)){seen.add(key);cols.push(w);}}
+  const inf=cols.find(c=>c[0]===1&&c.slice(1).every(a=>a===0));
+  const finite=cols.filter(c=>c!==inf)
+    .sort((a,b)=>cmpArr(a.slice().reverse(),b.slice().reverse()));
+  const ordered=[inf,...finite];
+  const rows=[];
+  for(let g=0;g<total;g++){const x=[];
+    for(let i=0;i<t;i++)x.push(Math.floor(g/Math.pow(q,t-1-i))%q);
+    rows.push(ordered.map(c=>c.reduce((s,ci,i)=>(s+ci*x[i])%q,0)));}
+  return rows;
+}
+const L18=[[1,1,1,1,1,1,1,1],[1,1,2,2,2,2,2,2],[1,1,3,3,3,3,3,3],
+[1,2,1,1,2,2,3,3],[1,2,2,2,3,3,1,1],[1,2,3,3,1,1,2,2],
+[1,3,1,2,1,3,2,3],[1,3,2,3,2,1,3,1],[1,3,3,1,3,2,1,2],
+[2,1,1,3,3,2,2,1],[2,1,2,1,1,3,3,2],[2,1,3,2,2,1,1,3],
+[2,2,1,2,3,1,3,2],[2,2,2,3,1,2,1,3],[2,2,3,1,2,3,2,1],
+[2,3,1,3,2,3,1,2],[2,3,2,1,3,1,2,3],[2,3,3,2,1,2,3,1]];
+const TAG2={"L4":3,"L8":7,"L12":11,"L16":15,"L32":31};
+
+// ------------------------------------------------ 因子
+function parseFactor(name,lvText,need){
+  const levels=lvText.split(",").map(s=>s.trim()).filter(s=>s!=="");
+  if(need==="two"&&levels.length===0)return{name,levels:["低","高"],numeric:true,coded:[-1,1]};
+  if(levels.length===0)throw name+" 缺少水平";
+  const numeric=levels.every(v=>!isNaN(parseFloat(v))&&isFinite(v));
+  let coded;
+  if(need==="two"){if(levels.length!==2)throw name+" 必须 2 水平（低,高）";coded=[-1,1];}
+  else coded=levels.map((_,i)=>levels.length>1?-1+2*i/(levels.length-1):0);
+  if(need==="range"){
+    if(levels.length!==2||!numeric)throw name+" 需要 2 个数值（下限,上限）";
+    return{name,levels:levels.map(Number),numeric:true,coded:[-1,1]};}
+  return{name,levels,numeric,coded};
+}
+function realOf(f,coded,mode){ // mode: exact | linear
+  if(mode==="linear"){
+    const lo=+f.levels[0],hi=+f.levels[f.levels.length-1];
+    const v=(lo+hi)/2+coded*(hi-lo)/2;
+    return Math.abs(v-Math.round(v))<1e-9?String(Math.round(v)):v.toFixed(4).replace(/0+$/,"").replace(/\.$/,"");}
+  let best=0,bd=Infinity;
+  f.coded.forEach((c,i)=>{const d=Math.abs(c-coded);if(d<bd){bd=d;best=i;}});
+  return f.levels[best];
+}
+
+// ------------------------------------------------ 设计生成
+function fmtNum(v){return Number.isInteger(v)?v:Math.round(v*1e4)/1e4;}
+
+function genFull(factors,center,seed){
+  const idx=factors.map(f=>f.levels.map((_,i)=>i));
+  const rows=[];
+  for(const combo of cartesian(idx)){
+    rows.push(combo.map((li,j)=>factors[j].coded[li]));}
+  for(let i=0;i<center;i++)rows.push(factors.map(()=>0));
+  return finish(rows,factors,seed,"全因子设计 Full Factorial",`中心点 ${center} 个（估计纯误差+曲性检验）`);
+}
+function cartesian(arrays){return arrays.reduce((a,b)=>a.flatMap(x=>b.map(y=>[...x,y])),[[]]);}
+
+function wordProduct(words){const cnt={};
+  words.forEach(w=>[...w].forEach(ch=>cnt[ch]=(cnt[ch]||0)+1));
+  const out=Object.keys(cnt).sort().filter(ch=>cnt[ch]%2===1);
+  return out.join("")||"I";}
+function genFrac(factors,gens,seed){
+  const k=factors.length,p=gens.length;
+  if(p===0)throw"至少需要一个生成元（如 E=ABC）";
+  const targets=gens.map(g=>g[0]);
+  const baseLetters=LETTERS.slice(0,k).split("").filter(L=>!targets.includes(L));
+  gens.forEach(([t,base])=>{for(const ch of base)
+    if(!baseLetters.includes(ch))throw"生成元只能引用基础因子 "+baseLetters.join("")+"（不支持链式）";});
+  const nrows=Math.pow(2,baseLetters.length);
+  const colvals={};
+  baseLetters.forEach((L,i)=>{colvals[L]=[];});
+  for(let r=0;r<nrows;r++)baseLetters.forEach((L,i)=>colvals[L].push((r>>i&1)?1:-1));
+  gens.forEach(([t,base])=>{colvals[t]=[];
+    for(let r=0;r<nrows;r++){let v=1;for(const ch of base)v*=colvals[ch][r];colvals[t].push(v);}});
+  const fullLetters=LETTERS.slice(0,k).split("");
+  const coded=Array.from({length:nrows},(_,r)=>fullLetters.map(L=>colvals[L][r]));
+  let words=["I"];const genWords=gens.map(([t,base])=>wordProduct([t+base]));
+  for(let r=1;r<=p;r++)for(const c of combinations(genWords,r))words.push(wordProduct(c));
+  words=[...new Set(words)].sort((a,b)=>a.length-b.length||a.localeCompare(b));
+  const resolution=Math.min(...words.filter(w=>w!=="I").map(w=>w.length));
+  const resName={3:"III",4:"IV",5:"V"}[resolution]||String(resolution);
+  let alias="\n别名结构：\n";
+  [1,2].forEach(size=>{combinations(fullLetters,size).forEach(combo=>{
+    const e=combo.join("");
+    const al=[...new Set(words.filter(w=>w!=="I").map(w=>wordProduct([e,w])))].filter(x=>x!==e&&x!=="I");
+    const keep=(size===1&&resolution>=4)||(size===1&&resolution===3)||(size===2&&resolution>=4);
+    if(keep)alias+=`  ${e} = ${al.join(" = ")||"（未混淆）"}\n`;});});
+  const info=`生成元：${gens.map(g=>g.join("=")).join(", ")}\n定义关系：I = ${words.filter(w=>w!=="I").join(" = ")}\n分辨率：${resName}${alias}`;
+  const hint=resolution===3?"分辨率 III：主效应与两因子交互混淆，仅适合强筛选":
+             resolution===4?"分辨率 IV：主效应干净，两因子交互互相混淆":
+             "分辨率 ≥ V：主效应与两因子交互均可独立估计";
+  return finish(coded,factors,seed,`部分因子设计 2^(${k}-${p})`,info,hint);
+}
+function combinations(arr,r){const res=[];
+  (function go(start,cur){if(cur.length===r){res.push(cur.slice());return;}
+    for(let i=start;i<arr.length;i++){cur.push(arr[i]);go(i+1,cur);cur.pop();}})(0,[]);
+  return res;}
+
+function genTaguchi(array,factors,seed){
+  const q=factors.map(f=>f.levels.length);
+  let rows,note="";
+  if(TAG2[array]!==undefined){
+    if(q.some(v=>v!==2))throw array+" 是 2 水平正交表，所有因子必须 2 水平";
+    if(factors.length>TAG2[array])throw array+" 最多 "+TAG2[array]+" 列";
+    rows=twoLevelArray(parseInt(array.slice(1))).map(r=>r.slice(0,factors.length).map(v=>v>0?1:2));
+  }else if(array==="L9"){
+    if(q.some(v=>v!==3))throw"L9 需要 3 水平因子";
+    if(factors.length>4)throw"L9 最多 4 列";
+    rows=bushOA(3,2).map(r=>r.slice(0,factors.length).map(v=>v+1));
+  }else if(array==="L18"){
+    if(factors.length!==8||q[0]!==2||q.slice(1).some(v=>v!==3))
+      throw"L18 固定结构 = 1 个 2 水平因子 + 7 个 3 水平因子";
+    rows=L18;
+  }else if(array==="L25"){
+    if(q.some(v=>v!==5))throw"L25 需要 5 水平因子";
+    if(factors.length>6)throw"L25 最多 6 列";
+    rows=bushOA(5,2).map(r=>r.slice(0,factors.length).map(v=>v+1));
+  }else if(array==="L27"){
+    if(q.some(v=>v!==3))throw"L27 需要 3 水平因子";
+    if(factors.length>13)throw"L27 最多 13 列";
+    rows=bushOA(3,3).map(r=>r.slice(0,factors.length).map(v=>v+1));
+  }else throw"未知正交表";
+  note="因子按顺序占用正交表前几列；交互分配见技能 references/taguchi-usage.md（点图）";
+  const real=rows.map(r=>r.map((lv,j)=>factors[j].levels[lv-1]));
+  return finishRows(real,rows,factors,seed,`田口正交设计 ${array}`,`运行数 ${rows.length}`,note);
+}
+function genPB(factors,runsOpt,seed){
+  const k=factors.length;
+  let n=runsOpt?parseInt(runsOpt):[8,12,16,20,24,32].find(c=>c-1>=k);
+  if(!n||n-1<k)throw"因子数过多：N-1 ≥ 因子数（N=8/12/16/20/24/32）";
+  const base=twoLevelArray(n);
+  if(base[0].length<k)throw`N=${n} 最多 ${base[0].length} 个因子`;
+  const coded=base.slice(0,n).map(r=>r.slice(0,k));
+  return finish(coded,factors,seed,`Plackett-Burman 筛选 N=${n}`,
+    "PB 设计只估计主效应，交互全部混淆；显著因子确定后建议增广或全因子验证");
+}
+function genBBD(factors,center,seed){
+  const k=factors.length;
+  if(k<3)throw"Box-Behnken 至少 3 个因子";
+  const rows=[];
+  for(let i=0;i<k;i++)for(let j=i+1;j<k;j++)
+    for(const a of[-1,1])for(const b of[-1,1]){
+      const r=factors.map(()=>0);r[i]=a;r[j]=b;rows.push(r);}
+  const nf=rows.length;
+  for(let i=0;i<center;i++)rows.push(factors.map(()=>0));
+  return finish(rows,factors,seed,`Box-Behnken（k=${k}）`,
+    `因子点 ${nf} + 中心点 ${center} = ${nf+center} runs`,
+    "BBD 无全因子角点：所有试验点都在安全区内，适合极端组合有风险的工艺");
+}
+function genCCD(factors,alphaMode,alphaVal,cf,ca,seed){
+  const k=factors.length;
+  let alpha=alphaVal;
+  if(alphaMode==="rotatable"){alpha=Math.pow(Math.pow(2,k),0.25);}
+  else if(alphaMode==="face"){alpha=1;}
+  const rows=[];
+  for(let r=0;r<Math.pow(2,k);r++){const row=[];
+    for(let j=0;j<k;j++)row.push((r>>j&1)?1:-1);rows.push(row);}
+  const nf=rows.length;
+  for(let j=0;j<k;j++)for(const s of[-1,1]){
+    const row=factors.map(()=>0);row[j]=s*alpha;rows.push(row);}
+  for(let i=0;i<cf+ca;i++)rows.push(factors.map(()=>0));
+  return finish(rows,factors,seed,`中心复合设计 CCD（k=${k}, α=${fmtNum(alpha)}）`,
+    `角点 ${nf} + 轴向 ${2*k} + 中心点 ${cf+ca} = ${nf+2*k+cf+ca} runs`,
+    alpha>1?"轴向点超出给定范围（α>1）：实际值按 center±α·(high−low)/2 计算，请确认工艺窗口可到达":"面中心设计：轴向点即给定上下限");
+}
+function genLHS(factors,samples,seed){
+  const rnd=seed==null?Math.random:mulberry32(seed);
+  const k=factors.length;
+  const perms=factors.map(()=>{const a=[...Array(samples).keys()];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;});
+  const rows=[];
+  for(let i=0;i<samples;i++){const r=[];
+    for(let j=0;j<k;j++)r.push((perms[j][i]+rnd())/samples);rows.push(r);}
+  return finish(rows,factors,seed,`拉丁超立方 LHS（N=${samples}）`,
+    "每因子每分层恰取 1 点；适合仿真/TCAD 扫描，物理试验建议 RSM 或正交表");
+}
+
+// 统一组装输出
+function finish(coded,factors,seed,title,info,hint){
+  const real=coded.map(cr=>cr.map((c,j)=>realOf(factors[j],c,
+    factors[j].levels.length===2&&factors[j].numeric?"linear":"exact")));
+  return finishRows(real,coded,factors,seed,title,info,hint);
+}
+function finishRows(real,coded,factors,seed,title,info,hint){
+  const n=real.length;
+  const order=shuffled(n,seed);
+  const letters=LETTERS.slice(0,factors.length).split("");
+  const headers=["运行顺序",...letters,...factors.map(f=>f.name)];
+  const table=real.map((r,i)=>[order[i],...coded[i].map(fmtNum),...r]);
+  return{headers,table,title,n,info,hint};
+}
+
+// ------------------------------------------------ UI
+let curType="full",lastResult=null;
+const $=id=>document.getElementById(id);
+
+const HINTS={full:"水平写法：水平1,水平2,水平3（数量不限，可为文本）",
+  frac:"2 水平写法：低,高",taguchi:"水平写法：水平1,水平2,水平3（或任意多水平）",
+  pb:"2 水平写法：低,高",bbd:"2 个数值：下限,上限",ccd:"2 个数值：下限,上限（角点）",
+  lhs:"2 个数值：下限,上限（连续区间）"};
+
+function addFactorRow(name="",levels=""){
+  const div=document.createElement("div");div.className="frow";
+  div.innerHTML=`<input class="fname" placeholder="因子名" value="${name}">
+    <input class="flevels" placeholder="水平（逗号分隔）" value="${levels}">
+    <button type="button" title="删除">✕</button>`;
+  div.querySelector("button").onclick=()=>div.remove();
+  $("factorList").appendChild(div);
+}
+addFactorRow("温度","180,200,220");addFactorRow("时间","5,8,10");
+$("addFactor").onclick=()=>addFactorRow();
+
+document.querySelectorAll("#typeTabs button").forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll("#typeTabs button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");curType=b.dataset.t;
+    document.querySelectorAll(".opt").forEach(o=>o.classList.remove("show"));
+    $("opt-"+curType).classList.add("show");
+    $("levelHint").textContent=HINTS[curType];};});
+
+function getFactors(need){
+  const fs=[];
+  document.querySelectorAll("#factorList .frow").forEach(row=>{
+    const name=row.querySelector(".fname").value.trim();
+    const lv=row.querySelector(".flevels").value;
+    if(!name&&!lv)return;
+    if(!name)throw"因子缺少名称";
+    fs.push(parseFactor(name,lv,need));});
+  if(fs.length===0)throw"请至少添加一个因子";
+  return fs;
+}
+function parseGens(text){
+  return text.split(/\n+/).map(s=>s.trim()).filter(Boolean).map(line=>{
+    const m=line.split("=");
+    if(m.length!==2)throw"生成元格式：E=ABC";
+    return[m[0].trim().toUpperCase(),m[1].trim().toUpperCase()];});
+}
+$("gen").onclick=()=>{
+  $("msg").innerHTML="";
+  try{
+    let res;
+    const seed=$("seed").value===""?null:parseInt($("seed").value);
+    if(curType==="full"){res=genFull(getFactors(null),+$("full-center").value||0,seed);}
+    else if(curType==="frac"){res=genFrac(getFactors("two"),parseGens($("frac-gens").value),seed);}
+    else if(curType==="taguchi"){res=genTaguchi($("tag-array").value,getFactors(null),seed);}
+    else if(curType==="pb"){res=genPB(getFactors("two"),$("pb-runs").value==="0"?null:$("pb-runs").value,seed);}
+    else if(curType==="bbd"){res=genBBD(getFactors("range"),+$("bbd-center").value||0,seed);}
+    else if(curType==="ccd"){res=genCCD(getFactors("range"),$("ccd-alpha").value,
+      +$("ccd-alphaval").value||2,+$("ccd-cf").value||0,+$("ccd-ca").value||0,seed);}
+    else if(curType==="lhs"){res=genLHS(getFactors("range"),+$("lhs-n").value||20,seed);}
+    lastResult=res;
+    $("resultPanel").style.display="block";
+    const kfac=(res.headers.length-1)/2;
+    $("summary").innerHTML=`<span class="badge acc">${res.title}</span>
+      <span class="badge ok">${res.n} runs</span>
+      <span class="badge acc">${kfac} 因子</span>`;
+    $("meta").innerHTML=(res.info?`<pre class="meta">${escapeHtml(res.info)}</pre>`:"")+
+      (res.hint?`<div class="note">${escapeHtml(res.hint)}</div>`:"")+
+      (seed!=null?`<div class="note ok">随机化种子 ${seed}：同种子可复现同一顺序</div>`:"");
+    renderTable(res);
+    $("resultPanel").scrollIntoView({behavior:"smooth"});
+  }catch(e){
+    $("msg").innerHTML=`<div class="err">⚠ ${escapeHtml(String(e))}</div>`;
+    $("resultPanel").style.display="none";
+  }
+};
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function renderTable(res){
+  const t=$("matrix");
+  let html="<thead><tr>"+res.headers.map(h=>`<th>${escapeHtml(h)}</th>`).join("")+"</tr></thead><tbody>";
+  res.table.forEach(r=>{html+="<tr>"+r.map((c,i)=>
+    `<td class="${i>0?"num":""}">${escapeHtml(String(c))}</td>`).join("")+"</tr>";});
+  t.innerHTML=html+"</tbody>";
+}
+function csvText(){
+  const esc=v=>{v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  return [lastResult.headers.map(esc).join(","),
+    ...lastResult.table.map(r=>r.map(esc).join(","))].join("\r\n");
+}
+$("dl").onclick=()=>{
+  const blob=new Blob(["\uFEFF"+csvText()],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="doe-design.csv";a.click();URL.revokeObjectURL(a.href);
+};
+$("cp").onclick=async()=>{
+  try{await navigator.clipboard.writeText("\uFEFF"+csvText());
+    $("cp").textContent="✓ 已复制";}
+  catch(e){$("cp").textContent="复制失败，请用下载";}
+  setTimeout(()=>$("cp").textContent="⧉ 复制 CSV",1500);
+};
+</script>
+</body>
+</html>
