@@ -1,12 +1,23 @@
 # process-toolbox-web
 
-[工艺工具箱 Process Toolbox](https://github.com/Neriah-Ado/process-toolbox)（私有仓库）的**网页发布仓库**：刻蚀选择比计算器。
+[工艺工具箱 Process Toolbox](https://github.com/Neriah-Ado/process-toolbox)（私有仓库）的**网页发布仓库**：刻蚀选择比计算器 + 工艺实验设计器（DOE）。
 
 ## 在线访问
 
 <https://neriah-ado.github.io/process-toolbox-web/>
 
+- **工艺实验设计器（DOE）**：<https://neriah-ado.github.io/process-toolbox-web/doe-designer.html>
+
 ## 功能
+
+### DOE 实验设计器（doe-designer.html，算法对应技能 `doe-process-design`）
+
+全因子 / 部分因子 2^(k-p)（含定义关系、分辨率与别名结构）/ 田口正交表
+L4·L8·L9·L12·L16·L18·L25·L27·L32 / Plackett-Burman 筛选 / Box-Behnken /
+中心复合 CCD（可旋转 α）/ 拉丁超立方。随机化运行顺序、导出 CSV（UTF-8 BOM），
+与私有仓库技能同一套算法（正交表为有限域/Hadamard 构造，经平衡性与两两正交验证）。
+
+### 刻蚀选择比计算器（index.html，算法对应技能 `etch-selectivity-calc`）
 
 刻蚀选择比（selectivity, S = ER(film) / ER(mask)）计算器，四种模式与私有仓库中的技能 `etch-selectivity-calc`（scripts/selectivity.py）保持同一套算法：
 
